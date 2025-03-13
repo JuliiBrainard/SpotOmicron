@@ -1,0 +1,105 @@
+## need somewhat similar code to run the KWallis tests...
+## presumably for that swap the SSname & denom loops then do the KW tests across those "rows"
+## see file = KWtests.R
+
+setwd("S:/UEA/Spot C19/SpotOmicron")
+library(readxl)
+allz <- read_excel("preR Omicron.xlsx", sheet = "data", range = "a582:m873", col_name=c("date", "P12", "P1", "P2", "ONSincid", "ONSprev", "Zoe", "EDSS", "GPIH", "calls", "web", "HospAdm", "C19PrimRsn") )
+
+install.packages("zoo", "plotrix", "gridExtra", "ggplot2")
+library(plotrix, gridExtra, zoo, readxl)
+
+
+##if needed .... creating the file with vart dominance indicated
+Delta = c(rep(1,104), rep(NA, 188))
+BA1 = c(rep(NA, 104), rep(1,69), rep(NA, 119))
+BA2 = c(rep(NA, 173), rep(1,107), rep(NA, 12))
+OmicOth = c(rep(NA,280), rep(1, 12))
+
+vardom = data.frame(allz$date, Delta, BA1, BA2, OmicOth) 
+names(vardom) = c("date", "Delta", "BA1", "BA2", "OmicOth")
+
+
+## Creating the Dframe that holds the info to construct Table 3
+wotsa = c("CompSS","Dmedian", "DQ1","DQ3","BA1median", "BA1Q1","BA1Q3","BA2median", "BA2Q1","BA2Q3","pvalWtest")
+wotsd = c("C19PrimRsn", "HospAdm", "P12", "Zoe","EDSS", "calls", "web", "C19PrimRsn", "HospAdm", "P12", "Zoe","EDSS", "calls", "web", "C19PrimRsn", "HospAdm", "P12", "Zoe","EDSS", "calls", "web")
+
+blu=data.frame(wotsd,c(NA),c(NA),c(NA),c(NA),c(NA),c(NA),c(NA),c(NA),c(NA), c(NA))  ## fills the df by columns
+names(blu) = wotsa  ## point of blue is to put info on lines, I can paste into an Excel template to get Table 3 in article
+
+## for the sub-periods, just allz to the time period needed
+
+irow = 0
+for(denom in c("ONSprev", "ONSincid",  "P12")) 
+{ ## 
+
+for(SSname in c("C19PrimRsn", "HospAdm", "P12", "Zoe","EDSS", "calls", "web")) #### "HospAdm" , "C19PrimRsn","Zoe", "EDSS", "calls", "web")) 
+{ ## 
+irow = irow + 1 ## after HQR, can advance rows
+jcol = 2   ## because gets to end of 11 columns below
+
+## going mad, check values
+## print(paste("irow is ",irow,", jcol is ",jcol,", denom is ",denom," SSname is ", SSname))
+
+tmp = allz[1:104,] ## delta period data only to start
+tmp1 =  tmp[[SSname]] / tmp[[denom]] 
+#hist(tmp1, 16); Sys.sleep(2)
+
+blu[irow,jcol] = summary(tmp1)[3] ## assign the median
+jcol = jcol + 1 ## reset jcol above if it gets too big
+blu[irow,jcol] = summary(tmp1)[2] ## assign the LQR
+jcol = jcol + 1 ## reset jcol above if it gets too big
+blu[irow,jcol] = summary(tmp1)[5] ## assign the Higher.QR
+jcol = jcol + 1 ## reset jcol above if it gets too big
+
+tmp = allz[105:173,] ## switch to BA1
+tmp2 =  tmp[[SSname]] / tmp[[denom]]
+# hist(tmp2, 16); Sys.sleep(2)
+
+
+blu[irow,jcol] = summary(tmp2)[3] ## assign the median
+jcol = jcol + 1 ## reset jcol above if it gets too big
+blu[irow,jcol] = summary(tmp2)[2] ## assign the LQR
+jcol = jcol + 1 ## reset jcol above if it gets too big
+blu[irow,jcol] = summary(tmp2)[5] ## assign the Higher.QR
+jcol = jcol + 1 ## reset jcol above if it gets too big
+
+tmp = allz[174:280,] ## switch to BA1
+tmp3 =  tmp[[SSname]] / tmp[[denom]]
+# hist(tmp3, 16); 
+
+blu[irow,jcol] = summary(tmp3)[3] ## assign the median
+jcol = jcol + 1 ## reset jcol above if it gets too big
+blu[irow,jcol] = summary(tmp3)[2] ## assign the LQR
+jcol = jcol + 1 ## reset jcol above if it gets too big
+blu[irow,jcol] = summary(tmp3)[5] ## assign the Higher.QR
+jcol = jcol + 1
+
+## code for running 1 way Welch ANOVA
+xxx = rbind(
+cbind(vt=1,ascrat=tmp1), 
+cbind(vt=2,ascrat=tmp2), 
+cbind(vt=3,ascrat=tmp3)
+)
+xxx1 = oneway.test(ascrat ~ vt, data = xxx, var.equal=FALSE)
+blu[irow, jcol] = xxx1[3]
+
+} ## end of for(SSname in
+} ## end of for(denom in
+
+
+write.csv(blu, "ascerts.csv", row.names=TRUE)
+
+
+## CODE FOR CHECKING THAT WELCH 1 WAY ANOVA IS RIGHT TEST
+
+### test for homoscedascity
+xxx = rbind(
+cbind(vt="D",ascrat=tmp1), 
+cbind(vt="B1",ascrat=tmp2), 
+cbind(vt="B2",ascrat=tmp3)
+)
+
+bartlett.test(ascrat ~ vt, data=xxx)
+
+

@@ -1,0 +1,87 @@
+## install.packages("zoo", "plotrix", "gridExtra", "ggplot2", "runner")
+## install.packages("rlang")
+# install.packages("scales")
+
+library(plotrix, gridExtra, zoo, readxl,runner)
+library(RVAideMemoire, runner)
+
+setwd("S:/UEA/Spot C19/SpotOmicron")
+library(readxl)
+allz <- read_excel("preR Omicron.xlsx", sheet = "data", range = "a582:m873", col_name=c("date", "P12", "P1", "P2", "ONSincid", "ONSprev", "Zoe", "EDSS", "GPIH", "calls", "web", "HospAdm", "C19PrimRsn") )
+allz$date = as.Date(allz$date)
+tmp = allz  ## whole period
+
+lineat = -0.55
+Delta = c(rep(lineat,104), rep(NA, 188))
+BA1 = c(rep(NA, 104), rep(lineat,69), rep(NA, 119))
+BA2 = c(rep(NA, 173), rep(lineat,107), rep(NA, 12))
+OmicOth = c(rep(NA,280), rep(lineat, 12))
+
+vardom = data.frame(allz$date, Delta, BA1, BA2, OmicOth) 
+names(vardom) = c("date", "Delta", "BA1", "BA2", "OmicOth")
+
+par(mgp=c(1,0.4,0), mar=c(2.5,2,1,2)) ##
+par(mfrow=c(1,1))
+
+
+## varn = c("P12", "P1", "P2", "C19PrimRsn")
+## varn = c("EDSS", "GPIH", "calls", "web")
+varn = c("Zoe", "HospAdm", "calls", "web", "EDSS", "GPIH") ## incidence group
+## varn = c("C19PrimRsn", "calls", "web", "EDSS", "GPIH") ## prevalence group
+## varn = c("Zoe")
+
+for (vv in varn) {
+yyll = c(-0.5, 1.0) 
+blu = runner (
+tmp,
+k = 31,
+f = function(tmp) {
+cor(tmp[[vv]], tmp$ONSincid, method="spearman")  ## Alternate these for Figures S3 & S4, is slightly different which CompSS
+## cor(tmp[[vv]], tmp$ONSprev, method="spearman")
+})  #end of runner2
+## manually assign the item to a new var which is the rolling 31 day correlations
+tmp[[paste0("Correl31day",vv)]] = blu  
+}
+
+## THIS IS SET FOR INCIDENCE, REMEMBER TO RESET BOTH OPTIONS ABOVE WHICH GROUP TO WHICH ONS
+## if I do this again, can I set colors as a vector?
+plot(tmp$date[16:277], tmp$Correl31dayZoe[31:292], lwd = 5, type='l', ylab="", xlab="", cex.axis=1.5, ylim=yyll, col = "#DA70F3", xaxt='n') # purple
+axis(side = 1, at = as.Date(c( "2021-10-01", "2021-11-01", "2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01", "2022-05-01", "2022-06-01")), labels=c("1 Oct", "1 Nov", "1 Dec", "1 Jan", "1 Feb", "1 Mar", "1 Apr", "1 May", "1 Jun"), las=1)
+
+lines(tmp$date[16:277], tmp$Correl31dayweb[16:277], lwd = 5, col = "#EB99C6") # pink
+lines(tmp$date[16:277], tmp$Correl31daycalls[16:277], lwd = 5, col = "#A8AAAB")  ## gray
+lines(tmp$date[16:277], tmp$Correl31dayGPIH[16:277], lwd = 5, col = "#F0F078")  ## yellow
+lines(tmp$date[16:277], tmp$Correl31dayEDSS[16:277], lwd = 5, col = "#F0AE61")  ## orange
+lines(tmp$date[16:277], tmp$Correl31dayHospAdm[16:277], lwd = 5, col = "#F02E31")  ## red
+legend('bottomright', y.intersp=0.12, x.intersp=0.6, bty="n", legend=c('Zoe', '111web', '111calls', 'GPIH', 'EDSS', 'HospAdm'), col=c("#DA70F3", "#EB99C6", "#A8AAAB", "#F0F078", "#F0AE61", "#F02E31"), lty=1, lwd=5, cex=1.2) ## 
+
+
+## THIS IS SET FOR PREVALENCE
+## if I do this again, can I set colors as a vector?
+plot(tmp$date[16:277], tmp$Correl31dayweb[16:277], lwd = 5, type='l', ylab="", xlab="", cex.axis=1.5, ylim=yyll, col = "#EB99C6", xaxt='n') # pink
+axis(side = 1, at = as.Date(c( "2021-10-01", "2021-11-01", "2021-12-01", "2022-01-01", "2022-02-01", "2022-03-01", "2022-04-01", "2022-05-01", "2022-06-01")), labels=c("1 Oct", "1 Nov", "1 Dec", "1 Jan", "1 Feb", "1 Mar", "1 Apr", "1 May", "1 Jun"), las=1)
+
+lines(tmp$date[16:277], tmp$Correl31daycalls[16:277], lwd = 5, col = "#A8AAAB")  ## gray
+lines(tmp$date[16:277], tmp$Correl31dayGPIH[16:277], lwd = 5, col = "#F0F078")  ## yellow
+lines(tmp$date[16:277], tmp$Correl31dayEDSS[16:277], lwd = 5, col = "#F0AE61")  ## orange
+lines(tmp$date[16:277], tmp$Correl31dayC19PrimRsn[16:277], lwd = 5, col = "#F02E31")  ## red
+legend('bottomright', y.intersp=0.14, x.intersp=0.6, bty="n", legend=c('111web', '111calls', 'GPIH', 'EDSS', 'C19PRinH'), col=c("#EB99C6", "#A8AAAB", "#F0F078", "#F0AE61", "#F02E31"), lty=1, lwd=5, cex=1.2) ## 
+
+
+## for both preval & incidence
+lines(vardom$date[1:292], vardom[,2], lwd = 5, col = "#16B823")
+lines(vardom$date[1:292], vardom[,3], lwd = 5, col = "#66C7ED")
+lines(vardom$date[1:292], vardom[,4], lwd = 5, col = "#6642F5")
+
+
+
+## THE USUAL LONG HARD SLOG TO learn how to DO SOMETHING INCREDIBLY SIMPLE
+boop = seq.Date(as.Date("2021-09-01"),as.Date("2022-06-19"), by="day")
+boop2 = rnorm(292, 5, 5)
+plot(boop, boop2, xaxt='n', xlab='')
+axis(side = 1, at = as.Date(c("2021-10-01", "2021-11-01", "2021-12-01")), labels=c("1 Oct", "1 Nov", "1 Dec"), las=2)
+
+
+
+
+

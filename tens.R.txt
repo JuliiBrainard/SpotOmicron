@@ -1,0 +1,43 @@
+setwd("S:/UEA/Spot C19/SpotOmicron")
+library(readxl)
+allz <- read_excel("preR Omicron.xlsx", sheet = "data", range = "a582:m873", col_name=c("date", "P12", "P1", "P2", "ONSincid", "ONSprev", "Zoe", "EDSS", "GPIH", "calls", "web", "HospAdm", "C19PrimRsn") )
+
+## seems this is required to get RVAideMemoire which has spearman.ci utility in it
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("mixOmics")
+
+install.packages("RVAideMemoire")
+install.packages("zoo", "plotrix", "gridExtra", "ggplot2")
+library(plotrix, gridExtra, zoo, RVAideMemoire)
+
+library(RVAideMemoire)
+par(mgp=c(1,0.4,0), mar=c(2,2,1,2)) ## mgp also determines label position, mind
+
+wotsa = c("SS", "stat", "P12","ONSincid", "ONSprev", "HospAdm", "C19PrimRsn", "Zoe", "EDSS", "GPIH", "calls", "web")
+wotsd = c("P12", "P12","ONSincid", "ONSincid", "ONSprev","ONSprev","HospAdm", "HospAdm", "C19PrimRsn", "C19PrimRsn", "Zoe", "Zoe", "EDSS","EDSS", "GPIH","GPIH", "calls", "calls", "web", "web")
+
+
+blu=data.frame(wotsd,c("rho","ci"), c(-99), c(-99), c(-99), c(-99), c(-99), c(-99), c(-99), c(-99), c(-99), c(-99))
+names(blu) = wotsa
+
+
+jcol=3
+### for(varn1 in c("P12", "ONSincid")) {  
+for(varn1 in c("P12", "ONSincid", "ONSprev","HospAdm", "C19PrimRsn","Zoe", "EDSS", "GPIH", "calls", "web")) {  
+irow=1
+for(varn2 in c("P12", "ONSincid", "ONSprev","HospAdm", "C19PrimRsn","Zoe", "EDSS", "GPIH", "calls", "web")) { 
+### for(varn2 in c("P12", "ONSincid", "ONSprev")) {   
+glu = spearman.ci(allz[[varn1]], allz[[varn2]])
+## assign rho
+blu[irow,jcol] = signif(glu$estimate, 4)
+irow=irow+1
+## assign ci
+blu[irow,jcol] = paste("(",signif(glu$conf.int[1], 3), " to ", signif(glu$conf.int[2], 3), ")")
+irow=irow+1
+}
+jcol=jcol+1
+}
+
+write.csv(blu, "10x10 correls.csv", row.names=TRUE)
+

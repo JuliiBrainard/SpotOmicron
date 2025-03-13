@@ -1,0 +1,107 @@
+install.packages("zoo", "plotrix", "gridExtra", "ggplot2", "runner")
+install.packages("rlang")
+install.packages("readxl")
+
+library(plotrix, gridExtra, zoo, readxl,runner)
+library(RVAideMemoire, runner)
+
+##creating the file with vart dominance indicated
+Delta = c(rep(0,104), rep(NA, 188))
+BA1 = c(rep(NA, 104), rep(0,69), rep(NA, 119))
+BA2 = c(rep(NA, 173), rep(0,107), rep(NA, 12))
+OmicOth = c(rep(NA,280), rep(NA, 12))
+
+
+setwd("S:/UEA/Spot C19/SpotOmicron")
+library(readxl)
+allz <- read_excel("preR Omicron.xlsx", sheet = "data", range = "a582:m873", col_name=c("date", "P12", "P1", "P2", "ONSincid", "ONSprev", "Zoe", "EDSS", "GPIH", "calls", "web", "HospAdm", "C19PrimRsn") )
+
+vardom = data.frame(allz$date, Delta, BA1, BA2, OmicOth) 
+names(vardom) = c("date", "Delta", "BA1", "BA2", "OmicOth")
+
+## par(mgp=c(1,0.4,0), mar=c(2,2,1,2)) ##
+par(mgp=c(1,0.4,0), mar=c(2,2,1,2)) ##
+par(mfrow=c(1,1))
+
+## varn = c("P12", "HospAdm", "C19PrimRsn", "Zoe")
+varn = c("HospAdm")
+## varn = c("EDSS", "GPIH", "calls", "web")
+## varn = c("C19PRinH", "Zoe")
+
+for (vv in varn) {
+
+if (vv == "EDSS" || vv == "HospAdm" || vv == "C19PRinH" || vv == "P12") {yyll = c(-0.8, 1.0) }
+if (vv == "GPIH") {yyll = c(-0.5, 1.0) } ## {yyll = c(-0.4, 0.8) }
+if (vv == "calls" || vv == "web") {yyll = c(-1.0, 1.0) }
+if (vv == "Zoe") {yyll = c(-0.5, 1.0) }
+yyll = c(-1.0, 1.0)
+
+blu = runner (
+allz,
+k = 30, ## don't put in lag or FGS idx
+f = function(allz) {
+cor(allz[[vv]], allz$P12, method="spearman") ## has to be cor(), cor.test fails
+}) #end of runner
+
+if (vv == "P12") {plot.new()}   ## blank space
+if (vv != "P12") {
+plot(allz$date[15:277], blu[30:292], type='l', ylab="", xlab="", cex.axis=1.0, ylim=yyll)
+lines(vardom$date[15:277], vardom$Delta[15:277], lwd = 3.5, col = "#16B823")
+lines(vardom$date[15:277], vardom$BA1[15:277], lwd = 3.5, col = "#66C7ED")
+lines(vardom$date[15:277], vardom$BA2[15:277], lwd = 3.5, col = "#6642F5")
+## lines(allz$date[15:277], c(rep(0,263)), lwd = 1, col = "#00FF00")
+summary(blu[30:292])  ## how to generate median & IQR info for table2 in paper
+}
+
+blu = runner (
+allz,
+k = 30,
+f = function(allz) {
+cor(allz[[vv]], allz$ONSincid, method="spearman")
+})  #end of runner
+plot(allz$date[15:277], blu[30:292], type='l', ylab="", xlab="", cex.axis=1.0, ylim=yyll)
+lines(vardom$date[15:277], vardom$Delta[15:277], lwd = 3.5, col = "#16B823")
+lines(vardom$date[15:277], vardom$BA1[15:277], lwd = 3.5, col = "#66C7ED")
+lines(vardom$date[15:277], vardom$BA2[15:277], lwd = 3.5, col = "#6642F5")
+## lines(vardom$date[15:277], vardom$OmicOth[15:277], lwd = 2, col = "#ED66D9") ##doesnt fit on
+##lines(allz$date[15:277], c(rep(0,263)), lwd = 1, col = "#00FF00")
+summary(blu[30:292])
+
+
+blu = runner (
+allz,
+k = 30,
+f = function(allz) {
+cor(allz[[vv]], allz$ONSprev, method="spearman")
+}) #end of runner
+plot(allz$date[15:277], blu[30:292], type='l', ylab="", xlab="", cex.axis=1.0, ylim=yyll)
+lines(vardom$date[15:277], vardom$Delta[15:277], lwd = 3.5, col = "#16B823")
+lines(vardom$date[15:277], vardom$BA1[15:277], lwd = 3.5, col = "#66C7ED")
+lines(vardom$date[15:277], vardom$BA2[15:277], lwd = 3.5, col = "#6642F5")
+## lines(allz$date[15:277], c(rep(0,263)), lwd = 1, col = "#00FF00")
+summary(blu[30:292])
+}
+
+
+
+## USEFUL NOT YET
+x <- data.frame(
+  date = seq.Date(Sys.Date(), Sys.Date() + 365, length.out = 20),
+  a = rnorm(20),
+  b = rnorm(20)
+)
+
+runner(
+  x, 
+  k = 4, 
+  lag = 0,
+  idx = x$date, 
+  f = function(tmp) {
+    cor(x$a, x$b, method="spearman")
+  }
+)
+
+## Sys.sleep(5)
+
+
+

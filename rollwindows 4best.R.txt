@@ -1,0 +1,88 @@
+install.packages("zoo", "plotrix", "gridExtra", "ggplot2", "runner")
+install.packages("rlang")
+
+library(plotrix, gridExtra, zoo, readxl,runner)
+library(RVAideMemoire, runner)
+
+
+setwd("S:/UEA/Spot C19/SpotOmicron")
+library(readxl)
+allz <- read_excel("preR Omicron.xlsx", sheet = "data", range = "a582:m873", col_name=c("date", "P12", "P1", "P2", "ONSincid", "ONSprev", "Zoe", "EDSS", "GPIH", "calls", "web", "HospAdm", "C19PrimRsn") )
+tmp = allz  ## whole period
+
+lineat = 0.5
+Delta = c(rep(lineat,104), rep(NA, 188))
+BA1 = c(rep(NA, 104), rep(lineat,69), rep(NA, 119))
+BA2 = c(rep(NA, 173), rep(lineat,107), rep(NA, 12))
+OmicOth = c(rep(NA,280), rep(lineat, 12))
+
+
+par(mgp=c(1,0.4,0), mar=c(2,2,1,2)) ##
+par(mfrow=c(1,1))
+
+
+## varn = c("P12", "P1", "P2", "C19PrimRsn")
+## varn = c("EDSS", "GPIH", "calls", "web")
+varn = c("P12")
+## varn = c("Zoe", "HospAdm", "calls", "web", "EDSS", "C19PrimRsn", "GPIH")
+## varn = c("GPIH")
+
+for (vv in varn) {
+
+yyll = c(-0.5, 1.0) 
+
+blu = runner (
+tmp,
+k = 31,
+f = function(tmp) {
+cor(tmp[[vv]], tmp$ONSincid, method="spearman")
+## cor(tmp[[vv]], tmp$ONSprev, method="spearman")
+})  #end of runner
+plot(tmp$date[16:277], blu[31:292], lwd = 2, type='l', ylab="", xlab="", cex.axis=1.5, ylim=yyll)
+lines(tmp$date[16:277], Delta[16:277], lwd = 3, col = "#16B823")
+lines(tmp$date[16:277], BA1[16:277], lwd = 3, col = "#66C7ED")
+lines(tmp$date[16:277], BA2[16:277], lwd = 3, col = "#6642F5")
+}
+
+
+## CODE NOT USED
+
+## when I was varying the y-axis, but not best when all in subpanels together
+if (vv == "P2" || vv == "P1") {yyll = c(-0.4, 1.1) }
+if (vv == "EDSS" || vv == "HospAdm" || vv == "P12" || vv == "C19PrimRsn") {yyll = c(-0.5, 1.2) }
+if (vv == "C19PrimRsn") {yyll = c(-1.0, 1.0) }
+if (vv == "GPIH") {yyll = c(-0.5, 1.0) } ## {yyll = c(-0.4, 0.8) }
+if (vv == "calls" || vv == "web" || vv == "WW") {yyll = c(-1.0, 1.0) }
+if (vv == "Zoe") {yyll = c(-0.5, 1.0) }
+
+
+## row comparing series with P12
+if (vv == "P12") {plot.new()}   ## blank space
+if (vv != "P12") {
+plot(tmp$date[16:287], blu[31:292], type='l', ylab="", xlab="", cex.axis=1.0, ylim=yyll)
+lines(tmp$date[16:287], c(rep(0)), lwd = 1, col = "#00FF00")
+}
+
+blu = runner (
+tmp,
+k = 31, ## don't put in lag or FGS idx
+f = function(tmp) {
+cor(tmp[[vv]], tmp$P12, method="spearman") ## has to be cor(), cor.test fails
+}) #end of runner
+plot(tmp$date[16:277], blu[31:292], type='l', ylab="", xlab="", cex.axis=1.0, ylim=yyll)
+lines(tmp$date[16:277], Delta[16:277], lwd = 2, col = "#16B823")
+lines(tmp$date[16:277], BA1[16:277], lwd = 2, col = "#66C7ED")
+lines(tmp$date[16:277], BA2[16:277], lwd = 2, col = "#6642F5")
+
+
+
+## row comparing series with ONSprev
+blu = runner (
+tmp,
+k = 31,
+f = function(tmp) {
+cor(tmp[[vv]], tmp$ONSprev, method="spearman")
+}) #end of runner
+plot(tmp$date[16:287], blu[31:292], type='l', ylab="", xlab="", cex.axis=1.0, ylim=yyll)
+lines(tmp$date[16:287], c(rep(0)), lwd = 1, col = "#00FF00")
+}

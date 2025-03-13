@@ -1,0 +1,32 @@
+setwd("R:/ReSST Shared Drive/UEA/Spot C19/combined")
+library(readxl)
+allz <- read_excel("preR Omicron.xlsx", sheet = "data", range = "a582:m873", col_name=c("date", "P12", "P1", "P2", "ONSincid", "ONSprev", "Zoe", "EDSS", "GPIH", "calls", "web", "HospAdm", "C19PrimRsn") )
+
+install.packages("readxl")
+install.packages("RVAideMemoire")
+install.packages("zoo", "plotrix", "gridExtra", "ggplot2")
+library(plotrix, gridExtra, zoo, RVAideMemoire)
+
+library(RVAideMemoire)
+par(mgp=c(1,0.4,0), mar=c(2,2,1,2)) ## mgp also determines label position, mind
+
+for(varname in c("P12", "HospAdm", "C19PrimRsn", "Zoe", "EDSS", "GPIH", "calls", "web")) {
+  print(paste(" * * * * * * *", varname," * * * * * * *"))
+  print(spearman.ci(allz[[varname]], allz$P12))
+  print(spearman.ci(allz[[varname]], allz$ONSincid))
+  print(spearman.ci(allz[[varname]], allz$ONSprev))
+}
+
+
+## for the sub-periods, just allz to the time period needed
+## tmp = allz[1:104,] ## delta
+## tmp = allz[105:173,] ## BA1
+tmp = allz[174:280,] ## BA2
+
+for(varname in c("P12", "HospAdm", "C19PrimRsn", "Zoe", "EDSS", "GPIH", "calls", "web")) {
+  print(paste(" * * * * * * *", varname," * * * * * * *"))
+  print(spearman.ci(tmp[[varname]], tmp$P12))
+  print(spearman.ci(tmp[[varname]], tmp$ONSincid))
+  print(spearman.ci(tmp[[varname]], tmp$ONSprev))
+}
+
